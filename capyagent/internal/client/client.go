@@ -25,7 +25,8 @@ type Response struct {
 }
 
 type Config struct {
-	ServerAddress string `json:"server_address"`
+	ServerAddress       string `json:"server_address"`
+	PollIntervalMinutes int    `json:"poll_interval_minutes"`
 }
 
 func NewClient(serverAddr string, tlsConfig *tls.Config) *Client {
@@ -36,11 +37,16 @@ func NewClient(serverAddr string, tlsConfig *tls.Config) *Client {
 }
 
 func LoadConfig(path string) (*Config, error) {
+	const defaultPollIntervalMinutes = 5
+
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			// default configuration if no config file is present
-			return &Config{ServerAddress: "127.0.0.1:8443"}, nil
+			return &Config{
+				ServerAddress:       "127.0.0.1:8443",
+				PollIntervalMinutes: defaultPollIntervalMinutes,
+			}, nil
 		}
 		return nil, fmt.Errorf("unable to read config: %w", err)
 	}
@@ -51,6 +57,9 @@ func LoadConfig(path string) (*Config, error) {
 	}
 	if cfg.ServerAddress == "" {
 		return nil, fmt.Errorf("config missing server_address")
+	}
+	if cfg.PollIntervalMinutes <= 0 {
+		cfg.PollIntervalMinutes = defaultPollIntervalMinutes
 	}
 	return &cfg, nil
 }
