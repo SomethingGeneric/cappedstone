@@ -1,38 +1,36 @@
 package main
 
 import (
-    "log"
-    "net"
-    "github.com/capy/capydaemon/internal/config"
-    "github.com/capy/capydaemon/internal/tls"
-    "github.com/capy/capydaemon/internal/server"
+	"fmt"
+	"log"
+
+	"capydaemon/internal/config"
+	"capydaemon/internal/server"
+	tlsutil "capydaemon/internal/tls"
 )
 
 func main() {
-    // Load server configuration
-    cfg, err := config.LoadConfig()
-    if err != nil {
-        log.Fatalf("Failed to load configuration: %v", err)
-    }
+	// Load server configuration
+	cfg, err := config.LoadConfig("config.json")
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
 
-    // Setup TLS listener
-    listener, err := tls.NewTLSListener(cfg.TLSConfig)
-    if err != nil {
-        log.Fatalf("Failed to create TLS listener: %v", err)
-    }
-    defer listener.Close()
+	if err := tlsutil.EnsureCertsExist(cfg.TLSCertFile, cfg.TLSKeyFile); err != nil {
+		log.Fatalf("TLS certificate files missing: %v", err)
+	}
 
-    log.Printf("Server is listening on %s", cfg.Address)
+	tlsConfig, err := tlsutil.LoadTLSConfig(cfg.TLSCertFile, cfg.TLSKeyFile)
+	if err != nil {
+		log.Fatalf("Failed to load TLS configuration: %v", err)
+	}
 
-    // Accept incoming connections
-    for {
-        conn, err := listener.Accept()
-        if err != nil {
-            log.Printf("Failed to accept connection: %v", err)
-            continue
-        }
+	address := fmt.Sprintf("%s:%d", cfg.ServerAddr, cfg.Port)
+	serverConfig := &server.Config{Address: address, TLSConfig: tlsConfig}
+	daemon, err := server.NewServer(serverConfig)
+	if err != nil {
+		log.Fatalf("Failed to create server: %v", err)
+	}
 
-        // Handle the connection in a new goroutine
-        go server.HandleConnection(conn)
-    }
+	daemon.Start()
 }
