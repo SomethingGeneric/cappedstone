@@ -1,0 +1,46 @@
+name: Build
+
+on:
+  push:
+
+jobs:
+  build:
+    name: Build ${{ matrix.goos }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: linux
+            runner: ubuntu-latest
+            binary_name: endpoint
+            artifact_name: endpoint-linux
+          - goos: windows
+            runner: windows-latest
+            binary_name: endpoint.exe
+            artifact_name: endpoint-windows
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: endpoint/go.mod
+
+      - name: Prepare build directory
+        run: mkdir -p build
+        working-directory: endpoint
+        shell: bash
+
+      - name: Build
+        run: go build -o build/${{ matrix.binary_name }} .
+        working-directory: endpoint
+        shell: bash
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: endpoint/build/${{ matrix.binary_name }}
