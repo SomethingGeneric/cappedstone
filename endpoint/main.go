@@ -12,7 +12,7 @@ func register() {
 func main() {
 	println("The stones are capped.... Or whatever")
 	println("We'll be connecting to " + server)
-	println("My hostname is " + GetHostname())
+	println("My hostname is " + GetHostname()) // Right now, on Windows we fail here (not exactly sure why. Didn't debug it for now)
 	//println("My IP is : " + GetHostIp())
 	println("My host OS is " + runtime.GOOS)
 	println("Version info: " + GetOSSubtype())
