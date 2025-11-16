@@ -14,6 +14,17 @@ class EndpointDatabase:
     def generate_endpoint_id(self):
         return uuid.uuid4()
 
+    def endpoint_exists(self, uuid):
+        return os.path.exists(f"{self.base_path}/{uuid}.toml")
+
+    def list_endpoints(self):
+        # TODO: this is def. replaceable with a lambda if i were smarter
+        all = os.listdir(self.base_path)
+        sani = []
+        for f in all:
+            sani.append(f.replace(".toml", ""))
+        return sani
+
     def register_endpoint(self, ip, hostname, osfamily, os, last_seen):
         obj = {
             "ip": ip,
